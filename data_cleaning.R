@@ -1,11 +1,10 @@
-setwd("~/Desktop/Stat 240/Project")
-
 library(stringr)
 library(readr)
 library(plyr)
 library(dplyr)
 
 pbha.raw <- read.csv("PBHA.csv", stringsAsFactors = FALSE)
+pbha.raw$Treated = c(rep(1,750), rep(0, nrow(pbha.raw)-750))
 names <- read.csv("names.csv", stringsAsFactors = FALSE)
 male.names <- unique(names$is.male)
 male.names <- male.names[male.names != ""]
@@ -59,3 +58,4 @@ pbha$sex <- with(pbha, 1*is.male + 0.5*(!is.male & !is.female))
 glimpse(pbha)
 
 save(pbha, file = "pbha.Rdata")
+

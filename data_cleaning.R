@@ -12,6 +12,7 @@ female.names <- unique(names$is.female)
 female.names <- female.names[female.names != ""]
 
 pbha <- transmute(pbha.raw,
+                  Y = as.numeric((as.Date(Last.Gift.Date, "%m/%d/%y") >= as.Date("11/01/14", "%m/%d/%y"))*Last.Gift.Amount),
                   z = Treated,
                   sal = Salutation,
                   full.name = Full.Name,

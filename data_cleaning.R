@@ -1,38 +1,40 @@
+install.packages("chron")
+
 library(stringr)
-library(readr)
-library(plyr)
 library(dplyr)
+library(chron)
 
 pbha.raw <- read.csv("PBHA.csv", stringsAsFactors = FALSE)
-pbha.raw$Treated = c(rep(1,750), rep(0, nrow(pbha.raw)-750))
+pbha.raw$Treated <- c(rep(1,750), rep(0, nrow(pbha.raw)-750))
 names <- read.csv("names.csv", stringsAsFactors = FALSE)
-male.names <- unique(names$is.male)
+male.names <- unique(names$male)
 male.names <- male.names[male.names != ""]
-female.names <- unique(names$is.female)
+female.names <- unique(names$female)
 female.names <- female.names[female.names != ""]
 
 pbha <- transmute(pbha.raw,
-                  Y = as.numeric((as.Date(Last.Gift.Date, "%m/%d/%y") >= as.Date("11/01/14", "%m/%d/%y"))*Last.Gift.Amount),
+                  Y = ifelse(is.na(Last.Gift.Amount), 0, (dates(Last.Gift.Date) >= dates("11/01/14")) * Last.Gift.Amount),
                   z = Treated,
                   sal = Salutation,
                   full.name = Full.Name,
                   no.grad.year = as.numeric(is.na(College.graduation.year)),
-                  grad.year = pmax(College.graduation.year, 0, na.rm = T),
+                  grad.year = pmax(College.graduation.year - min(College.graduation.year, na.rm = T), 0, na.rm = T),
+                  grad.year2 = grad.year^2,
                   leader = as.numeric(PBHA.Leadership.Roles.Held != ""),
                   no.mail = Do.Not.Snail.Mail,
                   total.gift = Total.Gifts,
                   total.hh.gift = Total.Household.Gifts,
+                  prev.gift = Total.Household.Gifts - y,
                   email = as.numeric(!Email.Opt.Out),
                   MA = as.numeric(Mailing.State.Province == "MA"),
                   CA = as.numeric(Mailing.State.Province == "CA"),
                   NY = as.numeric(Mailing.State.Province == "NY"),
-                  is.dr = as.numeric(sal == "Dr." || sal == "Drs." || sal == "Dr. & Mrs."),
+                  is.dr = as.numeric(Salutation == "Dr." | Salutation == "Drs." | Salutation == "Dr. & Mrs."),
                   phone = as.numeric(nchar(as.character(Phone)) > 0),
                   first.name = NA,
                   is.male = NA,
                   is.female = NA
                   )
-glimpse(pbha)
 
 # Assign gender on salutation and name
 for (ii in 1:nrow(pbha)) {
@@ -56,7 +58,5 @@ pbha$is.male[which(pbha$full.name == "R. Ramnath")] <- TRUE
 
 # Assign any remaining unclassified 0.5
 pbha$sex <- with(pbha, 1*is.male + 0.5*(!is.male & !is.female))
-glimpse(pbha)
 
 save(pbha, file = "pbha.Rdata")
-
